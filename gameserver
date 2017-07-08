@@ -1,0 +1,4 @@
+#!/bin/sh
+cd ./skynet
+./skynet ../servers/meme/center_config 
+

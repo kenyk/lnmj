@@ -1,0 +1,8 @@
+#!/bin/sh
+killall -9 skynet
+echo "start harbor skynet"
+cd ./skynet
+nohup ./skynet ../servers/meme/component_1  &
+
+ps -ef |grep skynet
+echo "start success"

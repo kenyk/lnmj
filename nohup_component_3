@@ -1,0 +1,11 @@
+#!/bin/sh
+#echo "pull from git..."
+#git pull origin develop
+echo "kill skynet"
+killall -9 skynet
+echo "start component_3 skynet"
+cd skynet
+nohup ./skynet ../servers/meme/component_3  &
+
+ps -ef |grep skynet
+echo "start success"

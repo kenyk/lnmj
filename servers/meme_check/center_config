@@ -1,0 +1,38 @@
+thread = 8
+--logger = "../log/gameserver_core.log"
+logger = nil
+logpath = "../log"
+loglevel = "debug"
+logfilename = "harbor_1"
+harbor = 1
+address = "127.0.0.1:12526"
+master = "127.0.0.1:12013"
+standalone = "0.0.0.0:12013"
+out_address = "121.201.48.189:8888"
+http_ip = "api.juyun66.com"
+start = "center_main"	-- main script
+bootstrap = "snlua bootstrap"	-- The service for bootstrap
+
+luaservice = "service/?.lua;"
+luaservice = luaservice.."../servers/meme_check/?.lua;"
+luaservice = luaservice.."../services/common/?.lua;"
+luaservice = luaservice.."../services/game_kind/0/gameserver/?.lua;"
+luaservice = luaservice.."../services/game_kind/0/logic/?.lua;"
+luaservice = luaservice.."../services/game_kind/0/logic/agent/?.lua;"
+luaservice = luaservice.."../services/game_kind/0/logic/majiang/?.lua;"
+luaservice = luaservice.."../services/game_kind/0/logic/room/?.lua;"
+luaservice = luaservice.."../services/persistent/cachedb/?.lua;"
+luaservice = luaservice.."../services/persistent/log/?.lua;"
+luaservice = luaservice.."../services/utils/?.lua;"
+
+
+lualoader = "lualib/loader.lua"
+preload = "../servers/meme_check/preload.lua"	-- run preload.lua before every lua service run
+cpath = "cservice/?.so"
+
+
+mysql_host="127.0.0.1"
+mysql_port=3306
+mysql_database="db_stat"
+mysql_user="linweixiong"
+mysql_password="qipai123987"

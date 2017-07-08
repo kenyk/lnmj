@@ -1,0 +1,8 @@
+#!/bin/sh
+killall -9 skynet
+echo "start center skynet"
+cd ./skynet
+nohup ./skynet ../servers/meme/center_config  &
+
+ps -ef |grep skynet
+echo "start success"
