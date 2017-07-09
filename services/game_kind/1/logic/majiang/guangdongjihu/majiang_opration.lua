@@ -130,9 +130,6 @@ function majiang_operation:mo_card(cardInfo, card, chair_id, louHuChair, istianh
 	local ret = {}
     local config = {}
     local hu_ret = {}
---    if last == -1 then
---        config.gang = true
---    end
     config.menqing = true
     if haidiChair then
         if haidiChair > 0 and haidiChair == chair_id then
@@ -173,7 +170,7 @@ function majiang_operation:mo_card(cardInfo, card, chair_id, louHuChair, istianh
 		    ret.canHu = true
             ret.hutype = 1
             ret.hucard = {card}
-            if config.haidipao then
+            if config.haidipao then --海底炮
                 ret.hutype = 2
             end
 	    end

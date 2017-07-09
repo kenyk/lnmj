@@ -50,8 +50,6 @@ function game_sink:init_game()
     self.isgangOut = false
     self.laizi = 0  -- 癞子
     self.laizipi = 0 --癞子皮
-    self.onHaidi = 0 --海底状态
-    self.haidiCount = 0 --海底问候的人数
     --杠牌的锁
     self.gangLock = {}
     self.gangCard = {}
@@ -125,8 +123,6 @@ function game_sink:close_sink()
     self.changsha_cache_card = nil
     self.laizi = nil  -- 癞子
     self.laizipi = nil --癞子皮
-    self.onHaidi = nil --海底状态
-    self.haidiCount = nil 
     self.qianggang_card = nil
 end
 

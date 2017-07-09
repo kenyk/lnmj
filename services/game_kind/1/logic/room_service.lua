@@ -405,15 +405,6 @@ function command.GAME_TALK_AND_PICTURE(uid, args)
 	return table_sink:post_talk_picture(args)
 end
 
-function command.GAME_PIAO_POINT(uid, args)
-    local player = room_player[uid]
-	if not player then
-		return
-	end
-    local chairid = get_chairid_by_uid(uid)
-    return game_sink:piao_handler(chairid, args.point)
-end
-
 function command.GAME_TING_CARD(uid, args)
     local player = room_player[uid]
     if not player then

@@ -98,15 +98,6 @@ function REQUEST:game_first_hu()
 	return res
 end
 
-function REQUEST:game_piao_point()
-    if not user.room_address or not user.chair_id then
-        return {code = -1}
-    end
-    local uid = user.account
-    local r, res = skynet.call(user.room_address, "lua", "game_piao_point", uid, self)
-    return res
-end
-
 function REQUEST:game_ting_card()
     if not user.room_address or not user.chair_id then
         return {code = -1}
