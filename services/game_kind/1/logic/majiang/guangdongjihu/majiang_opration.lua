@@ -1,5 +1,5 @@
 require "table_util"
-local hupai = require "majiang.ningxiang.hupai"
+local hupai = require "majiang.guangdongjihu.hupai"
 local json = require "cjson"
 local syslog = require "syslog"
 local majiang_operation = {}

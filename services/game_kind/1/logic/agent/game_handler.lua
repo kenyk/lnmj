@@ -44,15 +44,6 @@ function REQUEST:game_gang_card()
 	return res
 end
 
-function REQUEST:game_bu_card()
-	if not user.room_address or not user.chair_id then
-		return {code = -1}
-	end
-	local uid = user.account
-	local r,res = skynet.call(user.room_address, "lua", "game_bu_card", uid, self)
-	return res
-end
-
 function REQUEST:game_chi_card()
 	if not user.room_address or not user.chair_id then
 		return {code = -1}
@@ -122,15 +113,6 @@ function REQUEST:game_ting_card()
     end
     local uid = user.account
     local r, res = skynet.call(user.room_address, "lua", "game_ting_card", uid, self)
-    return res
-end
-
-function REQUEST:game_haidi_card()
-    if not user.room_address or not user.chair_id then
-        return {code = -1}
-    end
-    local uid = user.account
-    local r, res = skynet.call(user.room_address, "lua", "game_haidi_card", uid, self)
     return res
 end
 

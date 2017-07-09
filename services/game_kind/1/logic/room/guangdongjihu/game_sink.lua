@@ -2,9 +2,9 @@ require "functions"
 require "table_util"
 local json = require "cjson"
 -- local Scheduler = require "scheduler"
-local majiang = require "majiang.ningxiang.cardDef"
-local majiang_opration = require "majiang.ningxiang.majiang_opration"
-local game_player_info = require "majiang.ningxiang.game_player_info"
+local majiang = require "majiang.guangdongjihu.cardDef"
+local majiang_opration = require "majiang.guangdongjihu.majiang_opration"
+local game_player_info = require "majiang.guangdongjihu.game_player_info"
 local game_record_ctor = require "game_record"
 local syslog = require "syslog"
 -- game demo 
@@ -66,7 +66,6 @@ function game_sink:init_game()
 	self.game_privite_info.canPeng = 0
     self.game_privite_info.pengcard = 0
 	self.game_privite_info.canGang = {chair_id = 0}
-    self.game_privite_info.canBu = {chair_id = 0}
 	self.game_privite_info.canChi = 0
     self.game_privite_info.Chi_info = {}
 	--游戏结束结算
@@ -153,12 +152,6 @@ function game_sink:count_can_operation(ret, chair_id, op, lose_chair,card, hucar
 		tmp.card = ret.canGang
 		self.game_privite_info.canGang = tmp
 	end
-    if ret.canBu then
-		local tmp = {}
-		tmp.chair_id = chair_id
-		tmp.card = ret.canBu
-		self.game_privite_info.canBu = tmp
-    end
 	if ret.canChi then
 		self.game_privite_info.canChi = chair_id
         self.game_privite_info.Chi_info = ret.canChi
@@ -170,9 +163,6 @@ function game_sink:delete_player_can_operation(chair_id)
 		self.game_privite_info.canPeng = 0
         self.game_privite_info.pengcard = 0
 	end
-    if self.game_privite_info.canBu == chair_id then
-        self.game_privite_info.canGang = {chair_id = 0}
-    end
 	if self.game_privite_info.canGang.chair_id == chair_id then
 		self.game_privite_info.canGang = {chair_id = 0}
 	end
@@ -192,8 +182,7 @@ local player_op_priority = {
 	["chi"] = 1,
 	["peng"] = 2,
 	["gang"] = 3,
-	["hu"] = 5,
-    ["bu"] = 4
+	["hu"] = 4,
 }
 
 function game_sink:insert_player_operation(chair_id, option_type, card, gang_type)
@@ -226,14 +215,7 @@ function game_sink:deal_player_operation()
 	local player_operation = self.game_player_operation
 	local flag = false
 	--gang
-    if player_operation.op == 4 then
-        flag = true
-        if player_operation.gang_type == "bu_peng" then
-            self:bu_peng_card(player_operation.chair_id, player_operation.card, true)
-        elseif player_operation.gang_type == "bu_mo" then
-            self:bu_peng_card(player_operation.chair_id, player_operation.card, true)
-        end
-	elseif player_operation.op == 3 then
+    if player_operation.op == 3 then
 		flag = true
 		if player_operation.gang_type == "gang_peng" then
 			self:gang_peng_card(player_operation.chair_id, player_operation.card, true)
@@ -289,7 +271,7 @@ function game_sink:check_player_chi_need_wait(chair_id)
 end
 
 function game_sink:check_player_operation_need_wait(chair_id, option_type)
-	if option_type == "gang" or option_type == "bu" then
+	if option_type == "gang" then
 		return not self:check_player_gang_need_wait(chair_id)
 	elseif option_type == "peng" then
 		return not self:check_player_peng_need_wait(chair_id)
@@ -502,7 +484,7 @@ function game_sink:deal_cards()
 		self:send_table_client(k, "game_deal_card", {cards = table.clone(v.card_info.handCards),card_num = card_num,card_first = card_first})
 	end
     if self.game_config.kaiwang then
-        self:kaiwang_handler()
+        self:fangui_handler()
     end
 end
 
@@ -562,7 +544,7 @@ function game_sink:first_hu_handler(chair_id, iscancel)
 end
 
 
-function game_sink:operationHandler(chair_id, card, card1, istipsClent, ishaidi)
+function game_sink:operationHandler(chair_id, card, card1, istipsClent)
     if istipsClent then
         self:send_table_client(chair_id, "changsha_start_out")
     end
@@ -639,10 +621,6 @@ function game_sink:draw_card(chair_id, last)
 	    end
         self:send_table_client(chair_id, "game_draw_card", {chair_id = chair_id,card = card})
     else
-        if #self.aftercards == 1 then
-            self:deal_haidi(chair_id)
-            return
-        end
 		card = self.aftercards[1]
 		table.remove(self.aftercards, 1)
         syslog.info("chair_id:["..chair_id.."]摸牌["..card.."]")
@@ -681,59 +659,6 @@ function game_sink:draw_card(chair_id, last)
         end
     end
     self:operationHandler(chair_id, card, card1, last == 1)
-end
-
-function game_sink:deal_haidi(chair_id)
-    self.haidiCount = self.haidiCount + 1
-    if self.haidiCount > #self.players then
-        self:game_end()
-        return
-    end
-    self.onHaidi = chair_id
-    local tab = {}
-    tab.canHaidi = true
-    self:send_table_client(chair_id, "game_have_operation", {operation = json.encode(tab)})
-    self:send_table_client(0,"game_post_timeout_chair", {chair_id = chair_id})
-end
-
-function game_sink:deal_haidi_card(chair_id)
---要海底没胡就是他下局庄家
-    self.next_banker_chair = chair_id
-    local card = table.remove(self.aftercards, 1)
-    syslog.info("翻海底玩家["..chair_id.."]牌"..card)
-    self:send_table_client(0, "game_open_haidi", {card = card})
-    if not self.game_privite_info.Hu_info then
-        self.game_privite_info.Hu_info = {}
-    end 
-    local cardInfo = self.players[chair_id].card_info
-    local ret, hu_ret = majiang_opration:mo_card(cardInfo, card, chair_id, self.louHuChair, false, self.baoting[chair_id], nil, false, self.laizi, chair_id)
-    local has_hu = false
-    if not next(ret) then
-        for i , k in pairs(self.players) do
-            if i ~= chair_id then
-                cardInfo = self.players[i].card_info
-                local ret1, hu_ret1 = majiang_opration:mo_card(cardInfo, card, i, self.louHuChair, false, self.baoting[i],nil, false, self.laizi, chair_id)
-                if next(ret1) then
-                	syslog.debug("玩家:["..i.."]可操作:xxxxx"..json.encode(ret1))
-		            self:count_can_operation(ret1, i, 1, chair_id, card, ret1.hucard)
-		            self:send_table_client(i, "game_have_operation", {operation = json.encode(ret1)})
-                    self.game_privite_info.Hu_info[i] = hu_ret1
-                    self.game_record:record_game_action(i, 1, card)
-                    has_hu = true
-                end
-            end
-        end
-    else
-        has_hu = true
-        syslog.debug("玩家:["..chair_id.."]可操作:xxxxx"..json.encode(ret))
-		self:count_can_operation(ret, chair_id, 1, 0, card, ret.hucard)
-		self:send_table_client(chair_id, "game_have_operation", {operation = json.encode(ret)})
-        self.game_privite_info.Hu_info[chair_id] = hu_ret
-        self.game_record:record_game_action(chair_id, 1, card)
-    end
-    if not has_hu then
-        self:game_end()
-    end
 end
 
 function game_sink:check_baoting()
@@ -1087,115 +1012,6 @@ function game_sink:deal_qianggang_cancel(chair_id, card)
 --	self:deal_gang_balance(chair_id, 0, 1)
     self:init_player_operation()
 	self:draw_card(chair_id, -1)
-end
-
-function game_sink:bu_peng_card(chair_id, card, iscallback)
-    syslog.info("chair_id:["..chair_id.."]碰补张:["..card.."]")
-	if self.game_privite_info.canBu.chair_id ~= chair_id and not iscallback then
-		syslog.err("chair_id:["..chair_id.."]补张:["..card.."] 失败")
-		return true, {code = -1}
-	end
-	if self:check_player_operation_need_wait(chair_id, "bu") then
-		self:insert_player_operation(chair_id, "bu", card, "bu_peng")
-		self:delete_player_can_operation(chair_id, "canBu")
-		return true, {code = 30003}  --TODO:code可能会改
-	end
-	local user_card_info = self.players[chair_id].card_info
-	majiang_opration:handle_gang_peng_card(user_card_info.handCards, user_card_info.stackCards, user_card_info.gangCards, card, self.game_all_info.last_out_chair)
-	--把牌从出过的牌中拿走
-	local out_user_card_info = self.players[self.game_all_info.last_out_chair].card_info
-	majiang_opration:handle_kick_out_card(out_user_card_info.outCards, card)
-	self.game_record:record_game_action(chair_id, 8, card)
-    local last_cardsTmp = table.clone(out_user_card_info)
-    majiang_opration:handle_mo_card(last_cardsTmp.handCards, last_cardsTmp.stackCards, card)
-    self.game_record:add_game_replay(chair_id, self.game_all_info.last_out_chair, card, group_card(last_cardsTmp,true))
-	for k, v in pairs(self.players) do
-		if true then
-			local param = {chair_id = chair_id, card = card, bu_type = 3, out_chair = self.game_all_info.last_out_chair}
-			self:send_table_client(k, "game_bu_card",param)
-		end
-	end
-	self:delete_louHu_limit(chair_id)
-    self:init_player_operation()
-	self:draw_card(chair_id, -2)
-    local ret = majiang_opration:check_gang_after(user_card_info, self.laizi)
-    if next(ret) then
-        self:count_can_operation(ret, chair_id, 1, 0)
-		self:send_table_client(chair_id, "game_have_operation", {operation = json.encode(ret)})
-    end
-	return true, {code = 0}
-end
-
-function game_sink:bu_mo_card(chair_id, card)
-	syslog.info("chair_id:["..chair_id.."]摸补张:["..card.."]")
-	if self.game_privite_info.canBu.chair_id ~= chair_id then
-		syslog.err("chair_id:["..chair_id.."]补张:["..card.."] 失败")
-		return true, {code = 30001}
-	end
-	if self:check_player_operation_need_wait(chair_id, "bu") then
-		self:insert_player_operation(chair_id, "bu",card,  "bu_mo")
-		self:delete_player_can_operation(chair_id, "canBu")
-		return true, {code = 30003}  --TODO:code可能会改
-	end
---	local will_wait = false
-	local user_card_info = self.players[chair_id].card_info
-	local ret = majiang_opration:handle_gang_mo_card(user_card_info.handCards, user_card_info.stackCards, user_card_info.pengCards, user_card_info.gangCards, card,chair_id)
-	local out_chair = user_card_info.pengCards[card] or chair_id
-	for k, v in pairs(self.players) do
-		local param = {chair_id = chair_id, card = card, bu_type = ret.gang_type, out_chair = out_chair}
-		self:send_table_client(k, "game_bu_card", param)
---        local ret_2, hu_ret = majiang_opration:other_self_gang(v.card_info, card, k, self.louHuChair)
---		if ret_2.canHu then
---			will_wait = true
---			syslog.debug("玩家:["..k.."]可操作:"..json.encode(ret_2))
---			self:count_can_operation(ret_2, k, 3, chair_id,card)
---			self:send_table_client(k, "game_have_operation", {operation = json.encode(ret_2)})
---            self.isqianggang = chair_id
---		end
-	end
---	if will_wait then
---		return true, {code = 0}
---	end
-    if ret.gang_type == 1 then
-        majiang_opration:handle_mingGang_success(user_card_info.pengCards, user_card_info.gangCards, card)
-    end
-    self.game_record:record_game_action(chair_id, 8, card)
-	self:delete_louHu_limit(chair_id)
-    self:init_player_operation()
-	self:draw_card(chair_id, -2)
-    local ret = majiang_opration:check_gang_after(user_card_info, self.laizi)
-    if next(ret) then
-        self:count_can_operation(ret, chair_id, 1, 0)
-		self:send_table_client(chair_id, "game_have_operation", {operation = json.encode(ret)})
-    end
-	return true, {code = 0}
-end
-
-
-function game_sink:bu_card(chair_id, card)
-    syslog.info("chair_id:["..chair_id.."]补张:["..card.."]")
-	if not self.is_playing then
-		return false, {code = 30001}
-	end
-	if self.game_privite_info.canBu.chair_id ~= chair_id then
-		return true, {code = 30002}
-	end
-	local user_card_info = self.players[chair_id].card_info
-	local gang_type = majiang_opration:get_gang_type(user_card_info.handCards, user_card_info.stackCards, user_card_info.pengCards, card)
-    self.turnCard = card
-	if gang_type == 1 then
-        --非法操作
-        if self.turn ~= chair_id then
-            return false, {code = 30005}
-        end
---		return self:gang_mo_card(chair_id, card)
-        return self:bu_mo_card(chair_id, card)
-	elseif gang_type == 2 then
---		return self:gang_peng_card(chair_id, card)
-        return self:bu_peng_card(chair_id, card)
-	else
-		return false, {code = 30002}
-	end
 end
 
 function game_sink:chi_card(chair_id, card_table, iscallBack)
@@ -1569,15 +1385,6 @@ end
 
 function game_sink:cancel_action(chair_id)
 	syslog.info("chair_id:["..chair_id.."]取消")
-    --不要海底
-    if self.onHaidi == chair_id then
-        local id = chair_id + 1 
-        if id > #self.players then
-            id = 1
-        end
-        self:deal_haidi(id)
-        return true , {code = 0}
-    end
     --不要报听
     if self.readybaoting[chair_id] then
         self.readybaoting[chair_id] = nil
@@ -1679,9 +1486,9 @@ function game_sink:start_game()
 	-- {chair_id = chair_id, op = op, lose_chair = lose_chair, card = card}
 end
 
---确认癞子 癞子皮
-function game_sink:kaiwang_handler()
-    local card = majiang:getNingxianglaizi()
+--确认癞子，翻出牌后，翻牌+1为癞子，勾选双鬼:+1、+2为癞子
+function game_sink:fangui_handler()
+    local card = majiang:getFanPaiLaizi()
 	self.laizipi = card
 	local card1
 	if  math.floor((card+1)/10) ~= math.floor(card/10) then
@@ -1971,10 +1778,6 @@ function game_sink:post_game_reconnect(chair_id)
 		table.insert(ret.playerCard, tmp)
 	end
 	ret.canOperation = {}
-    --选择海底
-    if self.onHaidi == chair_id then
-        ret.canOperation["canHaidi"] = true
-    end
     --选择报听
     if self.readybaoting[chair_id] then
         ret.canOperation["canTing"] = true
@@ -2006,12 +1809,6 @@ function game_sink:post_game_reconnect(chair_id)
 				tmp[k] = true
                 ret.canOperation.canChi = self.game_privite_info.Chi_info
             end
-        elseif k == "canBu" then
-			if v.chair_id == chair_id then
-				local tmp = {}
-				tmp[k] = v.card
-                ret.canOperation[k] = v.card
-			end
 		end
 	end
     for i, k in pairs(self.changsha_first_hu_lock) do

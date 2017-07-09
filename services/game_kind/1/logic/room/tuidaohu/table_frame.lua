@@ -3,12 +3,6 @@ require "functions"
 local skynet = require "skynet"
 local trans = require "trans"
 local datacenter = require "datacenter"
--- local const = require "const"
--- local query_sharedata = require "query_sharedata"
--- local table_sink = require "table_sink"
--- local scheduler = require "scheduler"
--- local record_type = require "record_type"
--- local user_game_status = const.user_game_state
 local printR = table.printR
 local printT = table.printT
 local syslog = require "syslog"
@@ -25,19 +19,7 @@ local user_game_state = {
 	LOOKON = 4
 }
 
---[[
- self.table_players[chairid] = {
-    userinfo = {},
-    ready = boolean,   
- }
-
- self.lookon_players[uid] = {
-    
- }
-]]
-
 function table_frame:ctor(args)
-    -- self.super.ctor(self)
     --table.printT(args)
     self.REQUEST = REQUEST
     self.table_id = 1
@@ -56,9 +38,6 @@ function table_frame:ctor(args)
     self.room_name = args.room_name
     self.player_chairs = {}
     self.vote_sign = nil
-    -- self.parent = parent
-    -- self.table_sink = table_sink.new(self:get_interface())
-    -- self.table_sink = table_sink.new(self:get_interface())
 end
 
 
@@ -72,11 +51,6 @@ function table_frame:close_sink()
     self.player_chairs = nil
 end
 
-
-
-
-
-
 function table_frame:enter_table(userinfo)
     local uid = userinfo.uid
     if  self.lookon_players[uid] or self.table_players[uid] then
@@ -85,11 +59,6 @@ function table_frame:enter_table(userinfo)
     self.lookon_players[uid] = userinfo
     self.lookon_players[uid].game_state = user_game_state.LOOKON
     self.lookon_players_num = self.lookon_players_num + 1
-   -- print("----enter_table-----")
-    -- table.printT(self.lookon_players)
-    -- local args = {table_id = 11}
-    -- self:send_table_scene()
-    -- skynet.call(trans.uid_agent(uid), "lua", "send", "room_post_table_scene", args)
     return true, {code = 0, table_id = self.table_id, table_config = self.table_config, players = self:get_table_player_scene()}
 end
 
@@ -131,7 +100,7 @@ function table_frame:sit_down(uid)
     self.lookon_players[uid] = nil
     self.table_players[uid] = userinfo
     self.table_players[uid].game_state = user_game_state.SIT_DOWN
-    -- self.table_players[uid].chair_id = chair_id
+
     self.table_players_num = self.table_players_num + 1
     self.game_sink:add_player(chair_id, uid)
     self:send_table_scene()
@@ -348,8 +317,6 @@ function table_frame:vote_dismiss_room(uid, args)
         if args.option == 0 then
         	local sign , list = self:check_vote_win(args.option)
             if  sign then
-                --TODO:
-                -- self:dismiss()
                 self.vote_table = nil
                 self.vote_master = nil
                 self.vote_sign = true
@@ -392,9 +359,8 @@ function table_frame:vote_dismiss_room(uid, args)
            
             syslog.debugf("poll vote_dismiss_room  master:%d time :%f",uid,self.vote_table.vote_time)
             table.insert(self.vote_table.vote_agree, tmp)
-                --TODO:
+           
             skynet.timeout(30000, function() 
-                        --self:dismiss()
                         			syslog.debugf("check vote_dismiss_room dismiss caused by 300s timeout now time:%f", skynet.time())
 			                        if(self.vote_table and self.vote_table.vote_time and (skynet.time() - self.vote_table.vote_time >= 299)) then
 			                        	local sign, list = self:check_vote_win(1)
@@ -424,7 +390,6 @@ function table_frame:dismiss(args)
         if v.address  then
             skynet.send(v.address, "lua", "kick_room",{address = self.address, list = args.list})
         else
-            --datacenter.set("on_player", k, nil)
             skynet.send(".BUILD_ROOMS_SERVICE", "lua", "update_player_status", k, nil)
         end
     end
@@ -432,7 +397,6 @@ function table_frame:dismiss(args)
         if v.address then
             skynet.send(v.address, "lua", "kick_room",{address = self.address, list = args.list, normal = args.normal})
         else
-            --datacenter.set("on_player", k, nil)
             skynet.send(".BUILD_ROOMS_SERVICE", "lua", "update_player_status", k, nil)
         end
     end
@@ -485,9 +449,7 @@ function table_frame:on_game_end(args)
     	ret.room_id = self.room_name
     	ret.player_result, sclub, point_wms = self.game_sink:get_all_balance_result()
         ret.win = sclub
-    	--printT(ret)
     	self:SendAllUserClient("game_balance_result", ret)
-       -- self:dismiss(args or {})
        self:record_room_result(ret.player_result)
        if not args then
        	  skynet.send(".BUILD_ROOMS_SERVICE", "lua", "on_close_room", skynet.self(), {normal = true ,address = self.address, room_name = self.room_name, list = args and args.list or {}, enter_code = self.enter_code, sclub = sclub, point_wms = point_wms})
@@ -583,7 +545,6 @@ end
 
 function table_frame:SendAllUserClient(cmd, args)
     self:SendtableClient(0, cmd, args)
-    -- self:SendLookonClient(0, cmd, args)
 end
 
 --发送话或图片

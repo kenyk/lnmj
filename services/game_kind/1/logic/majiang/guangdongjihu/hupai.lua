@@ -1,4 +1,4 @@
-local cardDef = require "majiang.ningxiang.cardDef"
+local cardDef = require "majiang.guangdongjihu.cardDef"
 local syslog = require "syslog"
 
 local m_table = {}

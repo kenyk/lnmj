@@ -1,5 +1,4 @@
 require "table_util"
--- local hupai = require "majiang.hupai"
 local math = math
 local table = table
 
@@ -293,9 +292,5 @@ function cardDef:canGang(cards, card, flag)
 	-- elseif flag == "mogangpai" then
 	end
 end
-
--- function cardDef:test_hu(pai, MAXHUNNUM)
--- 	return hupai:check_can_hu(pai, MAXHUNNUM)
--- end
 
 return cardDef

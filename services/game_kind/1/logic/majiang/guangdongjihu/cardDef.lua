@@ -1,5 +1,4 @@
 require "table_util"
--- local hupai = require "majiang.hupai"
 local math = math
 local table = table
 
@@ -217,7 +216,7 @@ function cardDef:init_cards(laiZi, player_count)
     return player_cards, cards
 end
 
-function cardDef:getNingxianglaizi()
+function cardDef:getFanPaiLaizi()
     local cards = nolaiZiCard
     math.randomseed(tostring(os.time()):reverse():sub(1,6))
     return cards[math.random(#cards)]
@@ -341,9 +340,5 @@ function cardDef:canGang(cards, card, flag)
 	-- elseif flag == "mogangpai" then
 	end
 end
-
--- function cardDef:test_hu(pai, MAXHUNNUM)
--- 	return hupai:check_can_hu(pai, MAXHUNNUM)
--- end
 
 return cardDef

@@ -222,17 +222,6 @@ function command.GAME_GANG_CARD(uid,args)
 	return game_sink:gang_card(chairid, args.card)
 end
 
-function command.GAME_BU_CARD(uid, args)
-	local chairid = get_chairid_by_uid(uid)
-	if chairid == 0 then
-		return false, {code = -1}
-	end
-	if expend_time then
-		expend_time = expend_time + 1
-	end
-	return game_sink:bu_card(chairid, args.card)
-end
-
 function command.GAME_CHI_CARD(uid,args) 
 	local chairid = get_chairid_by_uid(uid)
 	if chairid == 0 then
@@ -336,14 +325,14 @@ function command.INIT(args)
     --2长沙 1湖南 7郴州 8红中（用转转的game_sink） 10宁乡麻将 28常德麻将
     --100推倒胡 101 广东鸡胡
 	if args.game_id == 101 
-        table_sink = changde_table_creator.new(args)
+        table_sink = guangdongjihu_table_creator.new(args)
         table_interface = table_sink:get_interface()
-        game_sink = changde_game_creator.new(table_interface)
+        game_sink = guangdongjihu_game_creator.new(table_interface)
         table_sink:set_game_sink(game_sink)
 	else
-		table_sink = table_creator.new(args)
+		table_sink = tuidaohu_table_creator.new(args)
 		table_interface = table_sink:get_interface()
-		game_sink = game_creator.new(table_interface)
+		game_sink = tuidaohu_game_creator.new(table_interface)
 		table_sink:set_game_sink(game_sink)
 	end
 	skynet.fork(checkSleepFromNow)
@@ -432,15 +421,6 @@ function command.GAME_TING_CARD(uid, args)
     end
     local chairid = get_chairid_by_uid(uid)
     return game_sink:deal_baoting(chairid)
-end
-
-function command.GAME_HAIDI_CARD(uid, args)
-    local player = room_player[uid]
-    if not player then
-        return
-    end
-    local chairid = get_chairid_by_uid(uid)
-    return game_sink:deal_haidi_card(chairid)
 end
 
 skynet.start(function()

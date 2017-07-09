@@ -3,8 +3,8 @@ require "table_util"
 local json = require "cjson"
 -- local Scheduler = require "scheduler"
 local majiang = require "majiang.cardDef"
-local majiang_opration = require "majiang.majiang_opration"
-local game_player_info = require "majiang.game_player_info"
+local majiang_opration = require "majiang.tuidaohu.majiang_opration"
+local game_player_info = require "majiang.tuidaohu.game_player_info"
 local game_record_ctor = require "game_record"
 local syslog = require "syslog"
 -- game demo 
@@ -125,18 +125,9 @@ function game_sink:count_can_operation(ret, chair_id, op, lose_chair,card)
 	if ret.canChi then
 		self.game_privite_info.canChi = chair_id
 	end
-	-- table.printT(self.game_privite_info)
 end
 
 function game_sink:delete_player_can_operation(chair_id)
-	-- for k, v in pairs(self.game_privite_info) do
-	-- 	if k ~= "can_hu" then
-	-- 		if v == chair_id then
-	-- 			print("k", k,v)
-	-- 			v = 0
-	-- 		end
-	-- 	end
-	-- end
 	if self.game_privite_info.canPeng == chair_id then
 		self.game_privite_info.canPeng = 0
         self.game_privite_info.pengcard = 0
@@ -488,14 +479,9 @@ function game_sink:draw_card(chair_id, last)
 		self:init_player_operation()
 	end
 	local card 
---	if last == -1 then
---		--杠摸最后一张牌
---		card = self.aftercards[#self.aftercards]
---		table.remove(self.aftercards)
---	else
-		card = self.aftercards[1]
-		table.remove(self.aftercards, 1)
---	end
+	card = self.aftercards[1]
+	table.remove(self.aftercards, 1)
+	
     self.turnCard = 0
 	syslog.info("chair_id:["..chair_id.."]摸牌["..card.."]")
 	local user_card_info = self.players[chair_id].card_info

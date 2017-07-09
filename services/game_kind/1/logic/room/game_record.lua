@@ -9,52 +9,21 @@ local function get_format_time(time)
 end
 
 function game_record:ctor(table_config)
-	--print("===game_record====")
-
-	--[[
-	table_config = {
-	    game_count = 8
-    	data = {"game_type":2,"laizi":false,"find_bird":0,"seven_hu":false,"idle":false,"qiang_gang":false}
-    	game_index = 1
-    	rate = 1
-    	createtime = 1479202095
-    	player_count = 2
-    	}
-	]]
-	--table.printT(table_config)
 	self.table_config = table_config
 	self.config = table_config.data
 	self:init_record()
-	--[[
-		point = 0
-		uid = 0
-		nickname = "--"
-	]]
 	self.player_record = {}
 	self.room_id = self.table_config.room_id
 	self.master_id = self.table_config.master_id
     self.replay = {}
-	-- self.game_index = game_index
 end
 
 function game_record:init_record()
-	--[[
-		table_card = ""
-		player_init_card = {
-			[1] = ""
-			[2] = ""
-			...
-		}
-		game_action = ""
-	]]
 	self.game_index = self.table_config.game_index
 	self.game_record = {}
 	self.game_action = ""
 	self.player_card = {}
 	self.init_card = {}
-	--[[
-
-	]]
 	self.game_result = ""
 end
 
