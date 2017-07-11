@@ -463,7 +463,6 @@ function game_sink:draw_card(chair_id, last)
     self.turnCard = 0
 	syslog.info("chair_id:["..chair_id.."]摸牌["..card.."]")
 	local user_card_info = self.players[chair_id].card_info
-	-- self:send_table_client(chair_id, "game_draw_card", {chair_id = chair_id,card = card})
 	for k, v in pairs(self.players) do
 		if k ~= chair_id then
 			self:send_table_client(k, "game_draw_card", {chair_id = chair_id,card = 0})
@@ -515,7 +514,6 @@ function game_sink:out_card(chair_id, card)
 		return false, {code = 30001}
 	end
     --非法操作
---    if self.turn ~= chair_id or next(self.game_privite_info.canHu) or next(self.game_privite_info.canGang) or self.game_privite_info.canPeng ~= 0 then
     if self.turn ~= chair_id or not self:check_player_chi_need_wait(chair_id) then
         syslog.info("chair_id:["..chair_id.."]非法出牌:["..card.."]turn "..self.turn)
         return false, {code = 30005}
@@ -527,16 +525,6 @@ function game_sink:out_card(chair_id, card)
     if tmp ~= 0 then
        syslog.err("error:mahjong count:"..#user_hand_card_info)
     end
---	local can_out_card = false
---	for k, v in pairs(user_hand_card_info) do
---		if card == v then
---			can_out_card = true
---			break
---		end
---	end
---	if not can_out_card then
---		return true, {code = -2}
---	end
     if not self.players[chair_id].card_info.stackCards[card] then
         return true, {code = -2}
     end
@@ -545,8 +533,6 @@ function game_sink:out_card(chair_id, card)
 	self:send_table_client(0, "game_out_card", {chair_id = chair_id, card = card})
 	majiang_opration:handle_out_card(user_card_info.handCards,user_card_info.stackCards, user_card_info.outCards,card)
 	self.game_record:record_game_action(chair_id, 2, card)
-	-- self.cur_out_chair = chair_id
-	-- self.game_all_info.cur_out_chair = chair_id
 	self.game_all_info.last_out_chair = chair_id
 	self.game_all_info.last_out_card = card
     --漏胡
@@ -645,11 +631,6 @@ function game_sink:gang_card(chair_id, card)
 	local gang_type = majiang_opration:get_gang_type(user_card_info.handCards, user_card_info.stackCards, user_card_info.pengCards, card)
     self.turnCard = card
 	if gang_type == 1 then
-        --非法操作
---        if self.turn == chair_id then
---            syslog.err("oioooooooooooooooooooooo")
---            return false, {code = 30005}
---        end
 		return self:gang_mo_card(chair_id, card)
 	elseif gang_type == 2 then
 		return self:gang_peng_card(chair_id, card)
@@ -771,7 +752,6 @@ end
 
 function game_sink:chi_card(chair_id, card_table, card)
 	local user_card_info = self.players[chair_id].card_info
-	-- handCard,stackCard,chiCard, other_card, chicards
 	local ret = majiang_opration:handle_chi_card(user_card_info.handCards, user_card_info.stackCards, user_card_info.chiCards,card_table ,card)
 	self.game_record:record_game_action(chair_id, 5, card)
 	for k, v in pairs(self.players) do
@@ -834,7 +814,7 @@ function game_sink:deal_hu_balance(win_chair, lose_chair, pbirdPoint, op)
 	if lose_chair == 0 then
 		for k, v in pairs(self.players) do
 			if k ~= win_chair then
-				if (win_chair == self.banker or k == self.banker) and self.game_config.idle then
+				if (win_chair == self.banker or k == self.banker) and self.game_config.idle then --节节高
 					v.balance_info.huPoint = - (2 + 1)
 				else
 					v.balance_info.huPoint = - 2
@@ -848,7 +828,7 @@ function game_sink:deal_hu_balance(win_chair, lose_chair, pbirdPoint, op)
 		--接炮
 		if op == 2 then
 			local lose_point = 0
-			if (self.banker == win_chair or self.banker == lose_chair) and self.game_config.idle then
+			if (self.banker == win_chair or self.banker == lose_chair) and self.game_config.idle then --节节高
 				lose_point = -2
 				win_point = 2
 			else
@@ -865,7 +845,7 @@ function game_sink:deal_hu_balance(win_chair, lose_chair, pbirdPoint, op)
 			for k, v in pairs(self.players) do
 				local lose_point = 0
 				if k ~= win_chair then
-					if (win_chair == self.banker or k == self.banker) and self.game_config.idle then
+					if (win_chair == self.banker or k == self.banker) and self.game_config.idle then --节节高
 						win_point = win_point - 3
 					else
 						win_point = win_point - 2
@@ -886,35 +866,6 @@ function game_sink:deal_hu_balance(win_chair, lose_chair, pbirdPoint, op)
 	win_balance_info.huType = op
 end
 
-
-local spacetransbirdTab = {
-    [1] = 1,
-    [2] = 2,
-    [3] = 3,
-    [4] = 4,
-    [5] = 1,
-    [6] = 2,
-    [7] = 3,
-    [8] = 4,
-    [9] = 1,
-}
-
-local function getiszhongBird(birds, chairid, banker)
-    local tab = {}
-    local space = chairid - banker + 1 
-    if space <= 0 then
-        space = space + 4
-    end
-    for i , k in pairs(birds) do 
-        local _, index = math.modf(k/10)
-        local num = math.floor(index*10+0.5)
-        if space == spacetransbirdTab[num] then
-            table.insert(tab, k)
-        end
-    end
-    return tab
-end
-
 --胡牌
 function game_sink:hu_card(chair_id, card)
 	syslog.info("chair_id:["..chair_id.."]胡")
@@ -925,7 +876,6 @@ function game_sink:hu_card(chair_id, card)
 	self.game_privite_info.Hu[chair_id] = true
 	local huIndex = 0
     local hutype = 0
-	-- self.game_privite_info.canHu = {{chair_id = 1, op = 1, lose_chair = 0, card = 11}}
 	self.next_banker_chair = chair_id
 	for k, v in pairs(self.game_privite_info.canHu) do
 		--结算
@@ -1063,10 +1013,8 @@ function game_sink:start_game()
 	self:init_game()
 	self.is_playing = true
 	self:send_table_client(0, "game_start_game", {time = os.time()})
---	self:shuffle_cards()
 	self:deal_cards()
 	self:draw_card(self:get_banker_chair(), 1)
-	-- {chair_id = chair_id, op = op, lose_chair = lose_chair, card = card}
 end
 
 --确认癞子，翻出牌后，翻牌+1为癞子，勾选双鬼:+1、+2为癞子
@@ -1171,18 +1119,13 @@ function game_sink:post_game_reconnect(chair_id)
 			tmp.handCards = v.card_info.handCards
 		end
 		tmp.point = v.base_info.point
-		-- ret.playerCard[K] = json.encode(tmp)
 		table.insert(ret.playerCard, tmp)
 	end
 	ret.canOperation = {}
---	local canOperation = {}
 	for k, v in pairs(self.game_privite_info) do
 		if k == "canHu" then
 			for hk, hv in pairs(v) do
 				if hv.chair_id == chair_id then
---					local tmp = {}
---					tmp[k] = true
---					table.insert(ret.canOperation,tmp)
                     ret.canOperation[k] = true
                     ret.canOperation.hutype = hv.op
                     ret.canOperation.hucard = hv.card
@@ -1192,19 +1135,16 @@ function game_sink:post_game_reconnect(chair_id)
 			if v.chair_id == chair_id then
 				local tmp = {}
 				tmp[k] = v.card
-				--table.insert(ret.canOperation,tmp)
                 ret.canOperation[k] = v.card
 			end
 		elseif k == "canPeng" then
 			if v == chair_id then
 				local tmp = {}
 				tmp[k] = true
---				table.insert(ret.canOperation,tmp)
                 ret.canOperation.canPeng = self.game_privite_info.pengcard
 			end
 		end
 	end
-	-- ret.canOperation = canOperation
 	ret.canOperation = json.encode(ret.canOperation)
 	ret.curOutCHair = self.game_all_info.cur_out_chair 
 	ret.lastOutChair = self.game_all_info.last_out_chair

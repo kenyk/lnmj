@@ -142,10 +142,6 @@ function command.ROOM_SIT_DOWN(uid)
 		return false, {code = 20006}
 	end
 	local r, res = table_sink:sit_down(uid)
-	-- if r then
-	-- 	game_sink:add_player(uid)
-	-- end
-	--table.printT(res)
 	return r,res
 end
 

@@ -46,9 +46,7 @@ local function record_build_room_log(room_info)
     param.game_count = room_info.table_config.game_count
     param.type = room_info.type or 1
     param.club_id = room_info.clubId or 0
-    -- local table_config = json.decode(room_info.table_config.data)
     param.config = room_info.table_config.data
-    -- table.printT(param)
     skynet.send(".MYSQL", "lua", "log", "db_game_log", "build_room_log", param)
 end
 

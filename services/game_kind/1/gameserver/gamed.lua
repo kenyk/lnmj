@@ -23,19 +23,11 @@ function gamed.open (config)
 		table.insert (pool, skynet.newservice ("agent", self))
 	end
 
-	--skynet.uniqueservice ("gdd")
     local world = skynet.uniqueservice ("world")
-
 	skynet.call (world, "lua", "init_chat", "public")
-
 	skynet.uniqueservice("dbRedis")
 	skynet.uniqueservice("mysqlLog")
-
 	skynet.uniqueservice("manage_room", world)
-
-
-	
-	
 end
 
 function gamed.command_handler (cmd, ...)
@@ -56,7 +48,6 @@ function gamed.command_handler (cmd, ...)
 		return online_person
 	end
 	
-
 	local f = assert (CMD[cmd])
 	return f (...)
 end

@@ -126,7 +126,6 @@ function table_frame:stand_up(uid)
     self.table_players[uid] = nil
     self.lookon_players_num = self.lookon_players_num + 1
     self.table_players_num = self.table_players_num -1
-    -- self:send_table_scene()
     return true, {code = 0}
 end
 
@@ -194,7 +193,6 @@ end
 function table_frame:get_table_scene()
     local ret = {}
     ret.table_config = table.clone(self.table_config)
-    -- ret.table_config.data = json.encode(ret.table_config.data)
     ret.players = self:get_table_player_scene()
     return true,ret
 end
@@ -208,7 +206,6 @@ function table_frame:get_table_player_scene()
     local players = {}
     for k, v in pairs(self.table_players) do
         local chair_id = self:get_chairid_by_uid(k)
-        -- players[chair_id] = v
         local tmp = table.clone(v)
         tmp.chair_id = chair_id
         tmp.point = self.game_sink:get_point(chair_id)

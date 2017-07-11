@@ -45,8 +45,6 @@ end
 
 function CMD.init_chat(gamed,id)
 	channel = mc.new()
---	syslog.debug(" chat channel set up:",channel," for",id)
-	
 end
 
 function CMD.send_message(agent,content)

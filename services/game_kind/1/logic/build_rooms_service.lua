@@ -28,7 +28,6 @@ local function record_build_room_log(room_info)
     param.player_count = room_info.table_config.player_count
     param.game_count = room_info.table_config.game_count
     param.type = room_info.type or 1
-    -- local table_config = json.decode(room_info.table_config.data)
     param.config = room_info.table_config.data
     -- table.printT(param)
     skynet.call("MYSQL", "lua", "log", "db_game_log", "build_room_log", param)
@@ -52,7 +51,6 @@ function command.ON_BUILD_ROOM(args)
 		ran = math.random(100000,999999)
 		enter_code = string.format("%06d",ran)
     end
-    -- local enter_code = 234567
     local room_name = ".ROOM_"..enter_code
 	local room_address
 	if #room_pool == 0 then
@@ -80,7 +78,6 @@ function command.ON_BUILD_ROOM(args)
         room_info.enter_code = enter_code
         room_info.create_time = os.time()
         room_info.users = {}
-        -- room_list_table[room_name] = room_info
         room_code_table[enter_code] = room_info
 
         record_build_room_log(tmp)
@@ -110,8 +107,6 @@ function command.GET_ROOM_INFO_BY_ROOM_NAME(enter_code)
 end
 
 function command.ON_CLOSE_ROOM(address, args)
-    -- local room_info = room_list_table[args.room_name]
-    -- room_list_table[args.room_name]       = nil
     room_code_table[args.enter_code] = nil
     skynet.call(address, "lua", "close", args)
     syslog.debugf ("room service %d recycled", address)

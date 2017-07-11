@@ -34,9 +34,6 @@ local function HarborInfo()
 	return statMsg
 end
 
-
-
-
 local function find_best_room_server(ismatch)  -- 优先游戏当地节点服务器，若无游戏当地节点服务器者中山机房,ismatch 比赛服务器默认在harbor 100以后
 	local best = 1
 	local numEntities = 0x7fffffff
@@ -247,12 +244,6 @@ function command.CREATE_ROOM_ANYWHERE_BATCH(args, status, body)
 	end		
 	return {status = 1,errCode = -12,error = "status 错误" }	
 end
-
-
-
-
-
-
 
 --lat 维度
 local function distance_earth(lat1, lng1, lat2, lng2)

@@ -217,10 +217,8 @@ function majiang_operation:other_out_card(handCard, stackCard, otherCard, chair_
 end
 
 function majiang_operation:check_four_laizi(stackCards, card)
---	local ret = {}
 	if self.table_config.laizi then
 		if stackCards[self.laizi_card] == 4 then
---			ret.canHu = true
             return true
         elseif stackCards[self.laizi_card] == 3 and card == self.laizi_card then
             return true
