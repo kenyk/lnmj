@@ -432,14 +432,14 @@ local function testSevenHu(stackCards, curHunNum)
 end
 
 local hupai = {}
-function hupai:check_can_hu(pai, MAXHUNNUM, seven_hu)
+function hupai:check_can_hu(pai, MAXHUNNUM, seven_hu,laizi_card)
 	local tmpcard = m_table.clone(pai)
 	table.sort(tmpcard)
-	--计算癞子数
+	--计算鬼牌数
 	local curHunNum = 0
 	if MAXHUNNUM ~= 0 then
         for i = #tmpcard, 1 ,-1 do
-            if tmpcard[i] == 45 then
+            if tmpcard[i] == laizi_card then
                 curHunNum = curHunNum + 1
                 table.remove(tmpcard, i)
             end
@@ -453,7 +453,6 @@ function hupai:check_can_hu(pai, MAXHUNNUM, seven_hu)
 			return true
 		end
 	end
-
 	--判断正常胡牌
 	if not next(tmpcard) then
 		return true

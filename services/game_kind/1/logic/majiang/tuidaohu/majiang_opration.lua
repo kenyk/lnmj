@@ -169,7 +169,7 @@ function majiang_operation:mo_card(handCard, stackCard, pengCard, card, last, ch
 	--TODO:判断是否能胡
 	local testCard = table.clone(handCard)
 	table.insert(testCard, card)
-	local canHu = hupai:check_can_hu(testCard,self.LAIZI, self.table_config.seven_hu)
+	local canHu = hupai:check_can_hu(testCard,self.LAIZI, self.table_config.seven_hu,self.table_config.laizi_card)
     if canHu and not (louHuChair[chair_id] and louHuChair[chair_id][card]) then
 		ret.canHu = true
         ret.hucard = card
@@ -206,7 +206,7 @@ function majiang_operation:other_out_card(handCard, stackCard, otherCard, chair_
         table.printR(louHuChair[chair_id])
     end 
 	if self.table_config.game_type == 1 and not (self.table_config.laizi and otherCard == self.laizi_card) then
-		local canHu = hupai:check_can_hu(tmpCard,self.LAIZI, self.table_config.seven_hu)
+		local canHu = hupai:check_can_hu(tmpCard,self.LAIZI, self.table_config.seven_hu,self.table_config.laizi_card)
 		if canHu and not (louHuChair[chair_id] and louHuChair[chair_id][otherCard]) then
 			ret.canHu = true
             ret.hutype = 2
@@ -249,8 +249,7 @@ function majiang_operation:other_self_gang(handCard, stackCard, otherCard, chair
 	local ret = {}
 	local tmpCard = table.clone(handCard)
 	table.insert(tmpCard, otherCard)
-	local canHu = hupai:check_can_hu(tmpCard, self.LAIZI, self.table_config.seven_hu)
---	if canHu and not (louHuChair[chair_id] and louHuChair[chair_id][otherCard]) then
+	local canHu = hupai:check_can_hu(tmpCard, self.LAIZI, self.table_config.seven_hu,self.table_config.laizi_card)
     if canHu then
 		ret.canHu = true
         ret.hutype = 3
