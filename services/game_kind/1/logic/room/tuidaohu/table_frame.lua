@@ -33,6 +33,7 @@ function table_frame:ctor(args)
     self.table_config.createtime = args.create_time
     self.table_config.room_id = args.room_name
     self.table_config.data = self.table_config.data
+    self.table_config.game_id = args.game_id
     self.address = args.address  --該房間服務的地址
     self.enter_code = args.enter_code
     self.room_name = args.room_name

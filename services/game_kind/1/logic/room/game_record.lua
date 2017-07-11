@@ -52,7 +52,7 @@ function game_record:record_game_action(chair_id,action,card,card1)
 7 取消
 8 补张
 9 飘
-10 鸟
+10 马
 	]]
 	local tmpstr = ""
 	if card then

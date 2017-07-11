@@ -304,7 +304,7 @@ function majiang_operation:other_out_card(cardInfo, otherCard, chair_id, louHuCh
 	return ret, hu_ret
 end
 
-function majiang_operation:deal_card(stackCards)
+function majiang_operation:check_four_laizi(stackCards)
 --	local ret = {}
 	if self.table_config.laizi then
 		if stackCards[45] == 4 then

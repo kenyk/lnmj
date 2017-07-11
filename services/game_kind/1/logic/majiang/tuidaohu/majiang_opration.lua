@@ -22,6 +22,17 @@ local function sub_stackCard(cards,card)
 	end
 end
 
+local function is_laizi_card(card,config)
+	if config.laizi == false then
+		return false
+	end
+	if table.indexof(config.laizi_card,card) == false then
+		return false
+	end
+	return true
+end
+
+
 --[[
 把牌分类
  	cards[11] = num
@@ -36,7 +47,7 @@ local function stackCards(cards)
 end
 
 local function canPeng(cards, card, config)
-	if (config.laizi or config.hongzhong) and card == 45 then
+	if is_laizi_card(card,config) then
 		return false
 	end
 	if cards[card] and cards[card] >= 2 then
@@ -46,14 +57,35 @@ local function canPeng(cards, card, config)
 end
 
 local function canChi(cards, card, chair_id,config)
-	if config.laizi and card == 45 then
+	if is_laizi_card(card,config) then
 		return false
 	end
-	if cards[card + 1] and cards[card + 2] then
+	if card >= 41 then --风牌暂时不支持吃
+		return false
+	end	
+	if cards[card +1] and cards[card +2] then
+		if is_laizi_card(card + 1,config) then
+			return false
+		end
+		if is_laizi_card(card +2,config) then
+			return false
+		end
 		return true
-	elseif cards[card -1] and cards[card + 1] then 
+	elseif cards[card -1] and cards[card +1] then
+		if is_laizi_card(card -1,config) then
+			return false
+		end
+		if is_laizi_card(card +1,config) then
+			return false
+		end	 
 		return true
 	elseif cards[card -2] and cards[card -1] then
+		if is_laizi_card(card - 2,config) then
+			return false
+		end
+		if is_laizi_card(card - 1,config) then
+			return false
+		end	 		
 		return true
 	end
 	return false
@@ -61,7 +93,7 @@ end
 
 local function canPengGang(cards, card, config) 
 	local ret = {}
-	if (config.laizi or config.hongzhong) and card == 45 then
+	if is_laizi_card(card,config) then
 		return ret
 	end
 	if cards[card] and cards[card] == 3 then
@@ -75,7 +107,7 @@ local function canAnGang(cards, config)
     local ret = {}
     for i , k in pairs(cards) do
         if k == 4  then
-            if not (config.laizi or config.hongzhong) and i == 45 then
+            if is_laizi_card(card,config) == false then
                 table.insert(ret,i)
             end
         end
@@ -85,7 +117,7 @@ end
 
 --目前没调用
 local function canGang(cards, card, config)
-	if config.laizi and card == 45 then
+	if is_laizi_card(card,config) then
 		return false
 	end
 	if cards[card] == 3 then
@@ -97,21 +129,24 @@ end
 
 local function moCanGang(stackCard, pengCard, card, config)
 	local ret = {}
-	if (config.laizi or config.hongzhong) and card == 45 then
+	if is_laizi_card(card,config) then
 		return ret
 	end
-	for k, v in pairs(stackCard) do
-		if v == 4 and (k ~= 45 or not config.laizi or config.hongzhong) then
-			table.insert(ret, k)
-			-- return true, k
+	for k, v in pairs(stackCard) do 
+		if v == 4 then
+			if is_laizi_card(k,config) == false then
+				table.insert(ret, k) --手上有4张同样牌的情况(上轮能杠没杠，这轮需要判断)
+			end		
+		elseif v == 1 then
+			if pengCard[k] then
+				table.insert(ret, k) --手上有一只牌，有碰的同样牌(上轮能杠没杠，这轮需要判断)
+			end
 		end
 	end
 	if stackCard[card] == 3 then
 		table.insert(ret, card)
-		-- return true, card
 	elseif pengCard[card] then
 		table.insert(ret, card)
-		-- return true, card
 	end
 	return ret
 end
@@ -142,15 +177,11 @@ function majiang_operation:mo_card(handCard, stackCard, pengCard, card, last, ch
 	end
     --第一次摸牌的时候判断4癞子(canhu没有false 只有nil)
     if isfirstDraw and not ret.canHu then
-        ret.canHu = self:deal_card(stackCard, card)
+        ret.canHu = self:check_four_laizi(stackCard, card)
         if ret.canHu then
             ret.hucard = card
             ret.hutype = 1
         end
-    end
-    --红中麻将能胡只能胡
-    if self.table_config.hongzhong and ret.canHu then
-        ret.canGang = nil
     end
 	return ret
 end
@@ -174,7 +205,7 @@ function majiang_operation:other_out_card(handCard, stackCard, otherCard, chair_
     if louHuChair[chair_id] then
         table.printR(louHuChair[chair_id])
     end 
-	if self.table_config.game_type == 1 and not (otherCard == 45 and self.table_config.laizi) then
+	if self.table_config.game_type == 1 and not (self.table_config.laizi and otherCard == self.laizi_card) then
 		local canHu = hupai:check_can_hu(tmpCard,self.LAIZI, self.table_config.seven_hu)
 		if canHu and not (louHuChair[chair_id] and louHuChair[chair_id][otherCard]) then
 			ret.canHu = true
@@ -185,13 +216,13 @@ function majiang_operation:other_out_card(handCard, stackCard, otherCard, chair_
 	return ret
 end
 
-function majiang_operation:deal_card(stackCards, card)
+function majiang_operation:check_four_laizi(stackCards, card)
 --	local ret = {}
 	if self.table_config.laizi then
-		if stackCards[45] == 4 then
+		if stackCards[self.laizi_card] == 4 then
 --			ret.canHu = true
             return true
-        elseif stackCards[45] == 3 and card == 45 then
+        elseif stackCards[self.laizi_card] == 3 and card == self.laizi_card then
             return true
 		end
 	end
@@ -300,7 +331,7 @@ function majiang_operation:handle_kick_out_card(outCards, card)
 end
 
 function majiang_operation:check_is_bird(card)
-	if self.table_config.laizi and card == 45 then 
+	if self.table_config.laizi and card == self.laizi_card then 
 		return true
 	elseif math.ceil(card / 10) <= 4 then
 		local tail_num = card % 10 
@@ -336,6 +367,19 @@ end
 
 --------------------------------------------------------------------
 
+function majiang_operation:check_is_laizi(card)
+	if self.table_config.laizi == true then
+		if self.laizi_card == card then
+			return true
+		end
+	end
+end
+
+function majiang_operation:set_fan_laizi(card)
+	self.table_config.laizi = true
+	self.laizi_card = card
+end
+
 function majiang_operation:set_config(game_config, table_config, louHuChair )
 	--[[
 		game_config = {}
@@ -367,9 +411,14 @@ function majiang_operation:set_config(game_config, table_config, louHuChair )
 
 	self.table_config.idle = self.table_config.idle or false
 	self.LAIZI = 0
-	if self.table_config.laizi or self.table_config.hongzhong then
+	if self.table_config.laizi then
 		self.LAIZI = 4
 	end
+	--现在翻牌，只做单鬼，翻鬼在game_sink.lua的set_fan_laizi函数中确定
+	if self.table_config.laizi and self.table_config.baiban_laizi == true then
+		self.laizi_card = 47
+	end  
+
 	self.bird_table = {}
 	self.bird_table[1] = true
 	self.bird_table[5] = true

@@ -22,7 +22,7 @@ function game_sink:ctor(interface, table_config)
 	self.game_record = game_record_ctor.new(self.table_config)
 end
 
---两人玩法不能抓鸟 没有癞子（防止客户端发错参数）
+--两人玩法不能抓马 没有癞子（防止客户端发错参数）
 function game_sink:init_game_config()
 	if self.table_config.player_count == 2 then
 		self.game_config.find_bird = 0
@@ -1105,66 +1105,6 @@ function game_sink:add_gangType(gangTypeInfo, gangType)
 	gangTypeInfo[gangType] = gangNum + 1
 end
 
-function game_sink:deal_hu_balance(win_chair, lose_chair, pbirdPoint, op)
-	local win_point = 0
-	local birdPoint = 0
-	--自摸
-	if lose_chair == 0 then
-		for k, v in pairs(self.players) do
-			if k ~= win_chair then
-				if (win_chair == self.banker or k == self.banker) then
-					v.balance_info.huPoint = - (2 + 1)
-				else
-					v.balance_info.huPoint = - 2
-				end
-				v.balance_info.birdPoint = -pbirdPoint
-				birdPoint = birdPoint + pbirdPoint
-				win_point = win_point + (-v.balance_info.huPoint)
-			end
-		end
-	elseif lose_chair ~= 0 then
-		--接炮
-		if op == 2 then
-			local lose_point = 0
-			if (self.banker == win_chair or self.banker == lose_chair) then
-				lose_point = -2
-				win_point = 2
-			else
-				lose_point = -1
-				win_point = 1
-			end
-			local game_balance_info = self.players[lose_chair].balance_info
-			game_balance_info.huPoint = lose_point
-			game_balance_info.birdPoint = -pbirdPoint
-			game_balance_info.huType = 4
-			birdPoint = birdPoint + pbirdPoint
-		--抢杠
-		elseif op == 3 then
-			for k, v in pairs(self.players) do
-				local lose_point = 0
-				if k ~= win_chair then
-					if (win_chair == self.banker or k == self.banker) then
-						win_point = win_point - 3
-					else
-						win_point = win_point - 2
-					end
-					birdPoint = birdPoint + pbirdPoint
-				end
-			end
-			local game_balance_info = self.players[lose_chair].balance_info
-			game_balance_info.huPoint = win_point
-			game_balance_info.birdPoint = -birdPoint 
-			game_balance_info.huType = 5
-			win_point = -win_point
-		end 
-
-	end
-	local win_balance_info = self.players[win_chair].balance_info
-	win_balance_info.huPoint = win_point
-	win_balance_info.birdPoint =  birdPoint
-	win_balance_info.huType = op
-end
-
 local spacetransbirdTab = {
     [1] = 1,
     [2] = 2,
@@ -1306,7 +1246,7 @@ function game_sink:hu_card(chair_id, card)
 	local huIndex = 0
     local hutype = 0
 	self.next_banker_chair = chair_id
-    --长沙最后算鸟用的
+    --长沙最后算马用的
     table.insert(self.changsha_hu_chair_id, chair_id)
 	for k, v in pairs(self.game_privite_info.canHu) do
 		--结算
@@ -1574,109 +1514,13 @@ function game_sink:deal_game_end_bird(iszimo)
     end
 end
 
---hu_type =1 自摸  别的放炮
---function game_sink:deal_game_end_bird(iszimo)
-----    self.next_banker_chair
-
---    if not next(self.changsha_game_end_balance_info.birdCard) then
---        return 
---    end
---    local bird_point = self.game_config.bird_point or 1
---    local birdTmp = getiszhongBird(self.changsha_game_end_balance_info.birdCard)
---    local player = self.players[self.next_banker_chair]
---    local birdtab = birdTmp[1] or {}
---    if iszimo then
---        local tmpPoint = 0
---        for i , k in pairs(self.players) do
---            if i ~= self.next_banker_chair then 
---                local space1 = i - self:get_banker_chair() + 1
---                if space1 <= 0 then
---                    space1 = space1 + #self.players
---                end
---                local birdtab1 = birdTmp[space1] or {}
---                tmpPoint = tmpPoint + #birdtab1*bird_point
---                k.changsha_balance_info.getpoint = k.changsha_balance_info.getpoint - #birdtab*bird_point - #birdtab1*bird_point
---                k.changsha_balance_info.getbird = #birdtab1
---                --给客户端筛选鸟
---                for i1, k1 in pairs(birdtab1) do
---                    local ishas = false
---                    for a, b in pairs(self.changsha_game_end_balance_info.zhongbird) do
---                        if b == k1 then
---                            ishas = true
---                        end
---                    end
---                    if not ishas then
---                        table.insert(self.changsha_game_end_balance_info.zhongbird, k1)
---                    end
---                end
---            end
---        end
---        player.changsha_balance_info.getpoint = player.changsha_balance_info.getpoint + #birdtab*(#self.players - 1)*bird_point + tmpPoint
---        player.changsha_balance_info.getbird = #birdtab
---        for i, k in pairs(birdtab) do
---            local ishas = false
---            for a, b in pairs(self.changsha_game_end_balance_info.zhongbird) do
---                if b == k then
---                    ishas = true
---                end
---            end
---            if not ishas then
---                table.insert(self.changsha_game_end_balance_info.zhongbird, k)
---            end
---        end
---    else
---        if self.dianPao == 1 then
---            player = self.players[self.changsha_lose_chair_id]
---            space = self.changsha_lose_chair_id - self:get_banker_chair() + 1
---            if space <= 0 then
---                space = space + #self.players
---            end
---            birdtab = birdTmp[space] or {}
---        end
---        for i, k in pairs(self.changsha_hu_chair_id) do
---            player1 = self.players[k]
---            local space1 = k - self:get_banker_chair() + 1
---            if space1 <= 0 then
---                space1 = space1 + #self.players
---            end
---            local birdtab1 = birdTmp[space1] or {}
---            player1.changsha_balance_info.getpoint = player1.changsha_balance_info.getpoint + #birdtab*bird_point + #birdtab1*bird_point
---			player1.changsha_balance_info.getbird = #birdtab1
---			player.changsha_balance_info.getpoint = player.changsha_balance_info.getpoint - #birdtab*bird_point - #birdtab1*bird_point
---            for i1, k1 in pairs(birdtab1) do
---                local ishas = false
---                for a, b in pairs(self.changsha_game_end_balance_info.zhongbird) do
---                    if b == k1 then
---                        ishas = true
---                    end
---                end
---                if not ishas then
---                    table.insert(self.changsha_game_end_balance_info.zhongbird, k1)
---                end
---            end
---        end
---		player.changsha_balance_info.getbird = #birdtab
---        for i, k in pairs(birdtab) do
---            local ishas = false
---            for a, b in pairs(self.changsha_game_end_balance_info.zhongbird) do
---                if b == k then
---                    ishas = true
---                end
---            end
---            if not ishas then
---                table.insert(self.changsha_game_end_balance_info.zhongbird, k)
---            end
---        end
---    end
---end
-
 --游戏结束
 function game_sink:game_end(args, iszimo)
 	syslog.info("game end")
 	self.is_playing = false
-    if self.table_config.game_index == 8 then
-        self.interface.send_red_bag()
-    end
+    -- if self.table_config.game_index == 8 then
+    --     self.interface.send_red_bag()
+    -- end
     self:deal_game_end_bird(iszimo)
     self.changsha_game_end_balance_info.ningxiang_player_balance = {}
     self.changsha_game_end_balance_info.banker = self.banker or 1

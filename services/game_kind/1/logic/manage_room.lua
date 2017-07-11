@@ -144,7 +144,7 @@ function command.ON_BUILD_ROOM_BATCH(args)
                             create_time = os.time(), 
                             room_name = room_name,
                             order     = args.orderCode[i],
-                            game_id   = args.gameId ,
+                            game_id   = args.gameId ,          --游戏ID[100推倒胡，101广东鸡胡]
                             batch_room = true,
                             clubId    = args.clubId ,
                         }

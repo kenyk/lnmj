@@ -189,20 +189,8 @@ local testCard = {
 }
 
 function cardDef:init_cards(laiZi, player_count)
-    local randcard = {}
---    if player_count == 2 then
---        randcard = twoPlayerCard
---    else
---        if laiZi then
---            randcard = laiZiCard
---        else
---            randcard = nolaiZiCard
---        end
---    end
-    
-    randcard = nolaiZiCard
---    randcard = testCard
-    
+    local randcard = {}  
+    randcard = nolaiZiCard  
     local cards = table.clone(randcard)
     math.randomseed(tostring(os.time()):reverse():sub(1,6))
     local player_cards = {}
@@ -210,7 +198,6 @@ function cardDef:init_cards(laiZi, player_count)
         player_cards[i] = {}
         for k = 1 , 13 do
             table.insert(player_cards[i], table.remove(cards, math.random(#cards)))
---            table.insert(player_cards[i], table.remove(cards, 1))
         end
     end
     return player_cards, cards
@@ -220,33 +207,6 @@ function cardDef:getFanPaiLaizi()
     local cards = nolaiZiCard
     math.randomseed(tostring(os.time()):reverse():sub(1,6))
     return cards[math.random(#cards)]
-end
-
-function cardDef:randCards(laiZi,player_count,cards)
-	local randcard = {}
-	if player_count == 2 then
-		randcard = twoPlayerCard
-	else
-		if laiZi then
-			randcard = laiZiCard
-		else
-			randcard = nolaiZiCard
-		end
-	end
-
-	-- local randcard = AllCards
-	local cardNum = #randcard
-	local curCount = 0
-
-	math.randomseed(tostring(os.time()):reverse():sub(1,6))
-	for i = 1, cardNum do
-		curCount = (cardNum - i) + 1
-		local index = math.random(1, curCount)
-		local tmp = randcard[index]
-		randcard[index] = randcard[curCount]
-		randcard[curCount] = tmp
-	end
-	return randcard
 end
 
 function cardDef:testCard()

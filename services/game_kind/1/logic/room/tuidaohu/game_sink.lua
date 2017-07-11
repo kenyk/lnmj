@@ -14,10 +14,6 @@ function game_sink:ctor(interface, table_config)
 	self.interface = interface
 	self.table_config = interface.table_config
 	self.game_config = json.decode(interface.table_config.data)
-    if self.game_config.hongzhong then
-        self.game_config.idle = true
-        self.game_config.bird_point = 2
-    end
 	self:init_game_config()
 	self.is_playing = false
 	self.players = {}
@@ -26,16 +22,14 @@ function game_sink:ctor(interface, table_config)
 	self.game_record = game_record_ctor.new(self.table_config)
 end
 
---两人玩法不能抓鸟 没有癞子（防止客户端发错参数）
+--两人玩法不能抓马 没有癞子
 function game_sink:init_game_config()
 	if self.table_config.player_count == 2 then
 		self.game_config.find_bird = 0
 		self.game_config.laizi = false
 	end
-	--首局庄为1
-	if self.game_config.idle then
-		self.banker = 1
-	end
+	--首局,创建房间者为庄家
+	self.banker = 1
 end
 
 function game_sink:init_game()
@@ -50,8 +44,16 @@ function game_sink:init_game()
     self.turnLock = false
     self.isqianggang = 0
     self.qianggang_card = 0
-    self.zhama = {}
 
+	--游戏结束结算
+	self.game_end_balance_info = {}
+	self.game_end_balance_info.game_index = self.table_config.game_index
+	self.game_end_balance_info.birdNum = 0
+	self.game_end_balance_info.banker = 0
+	self.game_end_balance_info.birdPlayer = 0
+	self.game_end_balance_info.birdCard = {}
+	self.game_end_balance_info.hu_chairs = {}
+	self.game_end_balance_info.player_balance = {}
 
 	--游戏私有信息
 	self.game_privite_info = {}
@@ -62,15 +64,7 @@ function game_sink:init_game()
 	self.game_privite_info.canGang = {chair_id = 0}
 	self.game_privite_info.canChi = 0
     self.game_privite_info.firstDraw = {}
-	--游戏结束结算
-	self.game_end_balance_info = {}
-	self.game_end_balance_info.game_index = self.table_config.game_index
-	self.game_end_balance_info.birdNum = 0
-	self.game_end_balance_info.banker = 0
-	self.game_end_balance_info.birdPlayer = 0
-	self.game_end_balance_info.birdCard = {}
-	self.game_end_balance_info.hu_chairs = {}
-	self.game_end_balance_info.player_balance = {}
+
 	--漏胡
 	self.louHuChair = {}  
     --是不是第一次摸牌
@@ -97,11 +91,8 @@ function game_sink:close_sink()
     self.turnCard = nil
     self.turnLock = nil
     self.isqianggang = nil
-    self.zhama = nil
     self.qianggang_card = nil
 end
-
-
 
 --[[
 	op: 1.自摸胡 2.接炮胡 3.抢杠胡
@@ -429,24 +420,12 @@ function game_sink:get_next_chair(chair_id)
 	end
 end
 
-----洗牌
---function game_sink:shuffle_cards()
---	self.cards = majiang:randCards(self.game_config.laizi, self.table_config.player_count)
---	-- self.cards = majiang:testCard()
---end
-
 --发牌
 function game_sink:deal_cards()
 	local player_cards = {}
-    --self.cards = majiang:randCards(self.game_config.laizi, self.table_config.player_count)
-	--player_cards, self.aftercards = majiang:dealCards(self.cards, self.table_config.player_count, 0)
-    player_cards, self.aftercards = majiang:init_cards(self.game_config.laizi, self.table_config.player_count, self.game_config.hongzhong)
+    player_cards, self.aftercards = majiang:init_cards(self.game_config.laizi, self.table_config.player_count, self.game_config.baiban_laizi,self.game_config.no_feng)
 	self.game_record:record_init_card(self.aftercards)
-    if self.game_config.hongzhong and self.game_config.find_bird > 0 then
-        for i = 1, self.game_config.find_bird do
-            table.insert(self.zhama, table.remove(self.aftercards, 1))
-        end
-    end
+
 	local card_num = {}
 	local card_first = self:get_banker_chair()
 	for i = 1,self.table_config.player_count do
@@ -458,12 +437,11 @@ function game_sink:deal_cards()
 		self.game_record:record_deal_card(k, v.card_info.handCards)
 		v.card_info.stackCards = majiang:stackCards(v.card_info.handCards)
 		self:send_table_client(k, "game_deal_card", {cards = table.clone(v.card_info.handCards),card_num = card_num,card_first = card_first})
---		local ret = majiang_opration:deal_card(v.card_info.stackCards)
---		if next(ret) then
---			self:count_can_operation(ret, k, 1, 0, 0)
---			self:send_table_client(k, "game_have_operation", {operation = json.encode(ret)})
---		end
 	end
+	--是否翻鬼
+    if self.game_config.kaiwang then
+        self:fangui_handler()
+    end	
 end
 
 --摸牌 ：last(-1摸最后一张 1第一次摸牌 0正常摸牌)
@@ -908,14 +886,6 @@ function game_sink:deal_hu_balance(win_chair, lose_chair, pbirdPoint, op)
 	win_balance_info.huType = op
 end
 
-local function checkHashongzhong(cards)
-    for i , k in pairs(cards) do
-        if k == 45 then
-            return false
-        end
-    end
-    return true
-end
 
 local spacetransbirdTab = {
     [1] = 1,
@@ -969,27 +939,11 @@ function game_sink:hu_card(chair_id, card)
 			if v.lose_chair ~= 0 then
 				table.insert(self.players[chair_id].card_info.handCards, v.card)
 			end
-            local zhamaTab = {}
-            if self.game_config.hongzhong then
-                if not next(self.game_end_balance_info.birdCard) then
-                    self.game_end_balance_info.birdCard = self.zhama
-                    local zhamaId = chair_id
-                    if #self.game_privite_info.canHu > 1 then
-                        zhamaId = v.lose_chair
-                    end
-                    if v.lose_chair == 0 and checkHashongzhong(self.players[chair_id].card_info.handCards) and self.aftercards[1] then
-                        table.insert(self.game_end_balance_info.birdCard, self.aftercards[1])
-                    end
-                    self.game_end_balance_info.zhongbird = getiszhongBird(self.game_end_balance_info.birdCard, zhamaId, self:get_banker_chair())
-                    self.game_end_balance_info.birdNum = #self.game_end_balance_info.zhongbird
-                end
-            else
-			    if not next(self.game_end_balance_info.birdCard) then
-				    local ret = majiang_opration:handle_find_bird(self.aftercards)
-				    self.game_end_balance_info.birdCard = ret.birds
-				    self.game_end_balance_info.birdNum = ret.bird_num
-			    end
-            end
+		    if not next(self.game_end_balance_info.birdCard) then
+			    local ret = majiang_opration:handle_find_bird(self.aftercards)
+			    self.game_end_balance_info.birdCard = ret.birds
+			    self.game_end_balance_info.birdNum = ret.bird_num
+		    end
 			self:deal_hu_balance(chair_id, v.lose_chair, self.game_end_balance_info.birdNum, v.op)
 			table.insert(self.game_end_balance_info.hu_chairs, chair_id)
 			if v.lose_chair ~= 0 then
@@ -1051,10 +1005,6 @@ function game_sink:cancel_action(chair_id)
 	local can_cancel = false
 	for k, v in  pairs(self.game_privite_info.canHu) do
 		if v.chair_id == chair_id then
-            if self.game_config.hongzhong then
-                --红中麻将不允许取消胡（客户端做自动胡）
-                return false, {code = 30002}
-            end
 			can_cancel = true
             if self.turnCard ~= 0 then
                 card = self.turnCard
@@ -1119,14 +1069,25 @@ function game_sink:start_game()
 	-- {chair_id = chair_id, op = op, lose_chair = lose_chair, card = card}
 end
 
+--确认癞子，翻出牌后，翻牌+1为癞子，勾选双鬼:+1、+2为癞子
+function game_sink:fangui_handler()
+    local card = majiang:getFanPaiLaizi(self.game_config.no_feng)
+	local card1
+	if  math.floor((card+1)/10) ~= math.floor(card/10) then
+		card1 = card-8
+	else
+		card1 = card+1
+	end
+	majiang_opration:set_fan_laizi(card1)
+
+	syslog.info("癞子为"..card1.."癞子皮是"..card)
+	self:send_table_client(0, "game_open_laizi", {laizipi = card, laizi = card1})
+end
+
 --游戏结束
 function game_sink:game_end(args)
 	syslog.info("game end")
-    if self.table_config.game_index == 8 then
-        self.interface.send_red_bag()
-    end
 	self.is_playing = false
-	-- self.game_end_balance_info
 	self.game_end_balance_info.player_balance = {}
 	self.game_end_balance_info.banker = self.banker or 1
 	for k, v in pairs(self.players) do
@@ -1142,14 +1103,13 @@ function game_sink:game_end(args)
 		tmp.point = 1000 + self:add_balance_point(k, tmp.huPoint + tmp.birdPoint + tmp.gangPoint)
 		table.insert(self.game_end_balance_info.player_balance, tmp)
 	end
-	--显示中鸟的玩家
+	--显示中马的玩家
 	if self.game_end_balance_info.birdNum > 0 then
 		self.game_end_balance_info.birdPlayer = self.next_banker_chair
 	end
 	self.game_record:write_game_record()
 	table.printR(self.game_end_balance_info)
 	self:send_table_client(0, "game_game_end", self.game_end_balance_info)
-    --self:send_table_client(0, "game_replay", {info= json.encode(self.game_record:get_game_replay())})
 	self.interface.on_game_end(args)
 	self.banker = self.next_banker_chair or 1
 	self:clear()

@@ -54,14 +54,23 @@ heartbeat 1003 {
   } 
 }
 
+#推倒胡 data = {game_type:2,qiang_gang:true,can_qiang_ming_gang:true,qiang_gang_quanbao:true,gang_bao_quanbao:true,seven_hu:true,jiafan:true,
+#              no_laizi_double:true,no_feng:true,follow_banker:true,idle:true,
+#              laizi:true,baiban_laizi:true,kaiwang:true,
+#              find_bird:2,bird_follow_point:true}
+#玩法          胡牌方式:(2.自摸)、可抢杠胡、明杠可抢、抢杠全包、杠爆全包、可胡7对、加番、无鬼加倍、不带风、跟庄、节节高 
+#鬼牌          是否有鬼、白板做鬼、翻鬼
+#买马          抓马数[2-10 -1为爆炸马]、马跟底分
+
+
 build_on_request_new_rooms 2002 {
   request {
     player_count 0 : integer #玩家人数
     rate 1 : integer  #倍率
     game_count 2 : integer #局数
-    data 3 : string #json {game_type:1,idle:true,laizi:true,seven_hu:true,find_bird:2,piao:true, goldbird:true, hongzhong:true,
-                    #     firstHu:true, kaiwang:true,bighu:1, huangzhuang:true}
-                    #     胡牌方式:(1.炮胡，2.自模胡)、是否庄闲、是否有癞子、是否能胡七对、抓鸟数 是否飘 是否金鸟  是否是红中麻将  是否起手胡  是否开王（翻癞子） 荒庄荒杠
+    data 3 : string #json {game_type:1,idle:true,laizi:true,baiban_laizi:true,kaiwang:true,seven_hu:true,find_bird:2,
+                    #     firstHu:true,bighu:1}
+                    #     胡牌方式:(1.炮胡，2.自模胡)、是否节节高、是否有鬼、是否白板鬼牌、是否翻鬼 是否能胡七对、抓马数  是否起手胡
   }
   response {
     code 0 : integer        
@@ -479,7 +488,7 @@ game_hu_card 3009 {
 .player_balance_info {
   huPoint 0 : integer              #胡牌得/失分
   gangPoint 1 : integer            #杠牌得/失分
-  birdPoint 2 : integer            #抓鸟得/失分
+  birdPoint 2 : integer            #抓马得/失分
   handCard 3 : string              #手牌
   huCard 4 : integer               #显示胡的牌
   huType 5 : integer               #1:自摸、2:接炮、3:抢杠胡,4:放炮、5:被抢杠  0:没胡
@@ -490,7 +499,7 @@ game_hu_card 3009 {
 
 .changsha_player_balance_info {
   getpoint 0 : integer              #得/失分
-  getbird 1 : integer                #中鸟数量
+  getbird 1 : integer                #中马数量
   handCard 2 : string              #手牌
   huCard 3 : integer               #显示胡的牌       大四喜         缺一色           板板胡          六六顺
   first_hu 4 : string                          #{bigfour:数量,lose_one_color:true,banban:true,liuliushun:true} json
@@ -504,7 +513,7 @@ game_hu_card 3009 {
 
 .ningxiang_player_balance_info{
   getpoint 0 : integer              #得/失分
-  getbird 1 : integer                #中鸟数量
+  getbird 1 : integer                #中马数量
   handCard 2 : string              #手牌
   huCard 3 : *integer               #显示胡的牌       大四喜         缺一色           板板胡          六六顺
   first_hu 4 : string                          #{bigfour:数量,lose_one_color:true,banban:true,liuliushun:true} json
@@ -521,12 +530,12 @@ game_game_end 3010 {
   request {
     game_index 0 : integer           #当前局数
     hu_chairs 1 : *integer           #胡牌玩家chair_id
-    birdCard 2 : *integer            #抓鸟
-    birdPlayer 3 : integer           #如果中鸟了显示中鸟玩家的chair_id 没中鸟为0
+    birdCard 2 : *integer            #抓马
+    birdPlayer 3 : integer           #如果中马了显示中马玩家的chair_id 没中马为0
     banker 4 : integer               #庄
     player_balance 5 : *player_balance_info  #玩家当局结算信息
     changsha_player_balance 6 : *changsha_player_balance_info #长沙麻将当局结算信息
-    zhongbird 7 : *integer           #中的鸟
+    zhongbird 7 : *integer           #中的马
     ningxiang_player_balance 8 : *ningxiang_player_balance_info  #宁乡麻将当局结算信息
   }
 }
