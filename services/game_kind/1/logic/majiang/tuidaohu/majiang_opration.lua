@@ -350,17 +350,33 @@ function majiang_operation:handle_find_bird(leftcard)
 		return ret
 	end
 	local num
-	if #leftcard > self.table_config.find_bird then
-		num = self.table_config.find_bird
-	else
-		num = #leftcard
-	end
-	for i = 1, num do
-		table.insert(ret.birds, leftcard[1])
-		if self:check_is_bird(leftcard[1]) then
-			ret.bird_num = ret.bird_num + self.table_config.bird_point
+	if self.game_config.find_bird == -1 then --胡牌的人只抓1匹马，马的点数是几就几分
+		local bird_point = 0
+		local card = leftcard[1]
+		if card >= 11 and card <= 39 then
+			bird_point = card % 10
+		elseif card >= 41 and card <= 47 then --风牌为10分
+			bird_point = 10
+		else
+			bird_point = 0
 		end
-		table.remove(leftcard, 1)
+		ret.bird_point = bird_point
+
+		table.insert(ret.birds, leftcard[1])
+		table.remove(leftcard, 1)	
+	else
+		if #leftcard > self.table_config.find_bird then
+			num = self.table_config.find_bird
+		else
+			num = #leftcard
+		end
+		for i = 1, num do
+			table.insert(ret.birds, leftcard[1])
+			if self:check_is_bird(leftcard[1]) then
+				ret.bird_num = ret.bird_num + self.table_config.bird_point
+			end
+			table.remove(leftcard, 1)
+		end
 	end
 	return ret
 end
@@ -404,7 +420,7 @@ function majiang_operation:set_config(game_config, table_config, louHuChair )
 	--table.printT(self.table_config)
 	local bird_point = self.table_config.bird_point or 1
 	self.table_config.bird_point = bird_point
-	self.table_config.find_bird = self.table_config.find_bird or 0
+	self.table_config.find_bird = self.table_config.find_bird
 	self.table_config.laizi = self.table_config.laizi or false
 	self.table_config.qiang_gang = self.table_config.qiang_gang or false
 	self.table_config.seven_hu = self.table_config.seven_hu or false
