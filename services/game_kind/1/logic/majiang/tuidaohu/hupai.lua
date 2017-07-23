@@ -430,7 +430,7 @@ local function testSevenHu(stackCards, curHunNum)
     end
 	return true
 end
-
+--fan_type: 1、平胡；2、7小对
 local hupai = {}
 function hupai:check_can_hu(pai, MAXHUNNUM, seven_hu,laizi_card)
 	local tmpcard = m_table.clone(pai)
@@ -450,19 +450,19 @@ function hupai:check_can_hu(pai, MAXHUNNUM, seven_hu,laizi_card)
 		local tmpcardtable = cardDef:stackCards(tmpcard)
 		if testSevenHu(tmpcardtable, curHunNum) then
 			syslog.info("testSevenHu:胡了")
-			return true
+			return true,2
 		end
 	end
 	--判断正常胡牌
 	if not next(tmpcard) then
-		return true
+		return true,1
 	end
 	if testHuPai(tmpcard, 4, curHunNum) then
 		syslog.info("testHu:胡了")
-		return true
+		return true,1
 	else
 		syslog.info("testHu:没胡")
-		return false
+		return false,0
 	end
 end
 

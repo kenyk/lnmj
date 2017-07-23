@@ -100,7 +100,7 @@ end
 function game_sink:count_can_operation(ret, chair_id, op, lose_chair,card)
 	--漏胡该轮不能胡
 	if ret.canHu and not (self.louHuChair[chair_id] and self.louHuChair[chair_id][card]) then
-		local param = {chair_id = chair_id, op = op, lose_chair = lose_chair, card = card}
+		local param = {chair_id = chair_id, op = op, lose_chair = lose_chair, card = card, fan_type = ret.fanType}
 		table.insert(self.game_privite_info.canHu, param)
 	end
 	if ret.canPeng then
@@ -807,17 +807,54 @@ function game_sink:add_gangType(gangTypeInfo, gangType)
 	gangTypeInfo[gangType] = gangNum + 1
 end
 
-function game_sink:deal_hu_balance(win_chair, lose_chair, pbirdPoint, op)
+function game_sink:check_is_laizi(card)
+	if majiang_opration:check_is_laizi_card(card) == false then
+		return false
+	end
+	return true
+end
+
+function game_sink:deal_hu_balance(win_chair, lose_chair, pbirdPoint, op, fan_type)
 	local win_point = 0
 	local birdPoint = 0
+	local chi_hu_base_point = 0
+	local zimo_hu_base_point = 0
+	if fan_type == 2 then --7对的分数需要改变，则改这里
+		chi_hu_base_point = 1
+		zimo_hu_base_point = 2
+		if self.game_config.seven_hu == true and self.game_config.jiafan == true then --可胡7小对，并且加翻
+			chi_hu_base_point = chi_hu_base_point * 2
+			zimo_hu_base_point = zimo_hu_base_point * 2
+		end
+	elseif fan_type <= 1 then --平胡基本分
+		chi_hu_base_point = 1
+		zimo_hu_base_point = 2 
+	end
+
+	if self.game_config.no_laizi_double == true then
+		local game_card_info = self.players[win_chair].card_info
+		local handCards = table.clone(game_card_info.handCards)
+		local is_double = true
+		for k,v in pairs(handCards) do
+			if self:check_is_laizi(v) == true
+				is_double = false
+				break
+			end
+		end
+		if is_double == true
+			chi_hu_base_point = chi_hu_base_point * 2
+			zimo_hu_base_point = zimo_hu_base_point * 2
+		end
+	end
+
 	--自摸
 	if lose_chair == 0 then
 		for k, v in pairs(self.players) do
 			if k ~= win_chair then
-				if (win_chair == self.banker or k == self.banker) and self.game_config.idle then --节节高
-					v.balance_info.huPoint = - (2 + 1)
+				if (win_chair == self.banker or k == self.banker) and self.game_config.idle then --节节高，庄赢加2分
+					v.balance_info.huPoint = - (zimo_hu_base_point + 2)
 				else
-					v.balance_info.huPoint = - 2
+					v.balance_info.huPoint = - zimo_hu_base_point
 				end
 				v.balance_info.birdPoint = -pbirdPoint
 				birdPoint = birdPoint + pbirdPoint
@@ -828,12 +865,12 @@ function game_sink:deal_hu_balance(win_chair, lose_chair, pbirdPoint, op)
 		--接炮
 		if op == 2 then
 			local lose_point = 0
-			if (self.banker == win_chair or self.banker == lose_chair) and self.game_config.idle then --节节高
-				lose_point = -2
-				win_point = 2
+			if (self.banker == win_chair or self.banker == lose_chair) and self.game_config.idle then --节节高，庄赢加2分
+				lose_point = -(chi_hu_base_point + 2)
+				win_point = chi_hu_base_point + 2
 			else
-				lose_point = -1
-				win_point = 1
+				lose_point = -chi_hu_base_point
+				win_point = chi_hu_base_point
 			end
 			local game_balance_info = self.players[lose_chair].balance_info
 			game_balance_info.huPoint = lose_point
@@ -845,10 +882,10 @@ function game_sink:deal_hu_balance(win_chair, lose_chair, pbirdPoint, op)
 			for k, v in pairs(self.players) do
 				local lose_point = 0
 				if k ~= win_chair then
-					if (win_chair == self.banker or k == self.banker) and self.game_config.idle then --节节高
-						win_point = win_point - 3
+					if (win_chair == self.banker or k == self.banker) and self.game_config.idle then --节节高，庄赢加2分
+						win_point = win_point - (zimo_hu_base_point + 2)
 					else
-						win_point = win_point - 2
+						win_point = win_point - zimo_hu_base_point
 					end
 					birdPoint = birdPoint + pbirdPoint
 				end
@@ -894,7 +931,7 @@ function game_sink:hu_card(chair_id, card)
 			    self.game_end_balance_info.birdCard = ret.birds
 			    self.game_end_balance_info.birdNum = ret.bird_num
 		    end
-			self:deal_hu_balance(chair_id, v.lose_chair, self.game_end_balance_info.birdNum, v.op)
+			self:deal_hu_balance(chair_id, v.lose_chair, self.game_end_balance_info.birdNum, v.op, v.fan_type)
 			table.insert(self.game_end_balance_info.hu_chairs, chair_id)
 			if v.lose_chair ~= 0 then
 				self.dianPao = self.dianPao + 1
@@ -1048,7 +1085,21 @@ function game_sink:game_end(args)
 		tmp.huCard = v.card_info.huCard
 		tmp.huType = v.balance_info.huType
 		tmp.gangType = json.encode(v.balance_info.gangType)
-		tmp.point = 1000 + self:add_balance_point(k, tmp.huPoint + tmp.birdPoint + tmp.gangPoint)
+
+		if self.game_config.bird_follow_point == true then	--马跟底分
+			local total_bird_point = 0
+			local birdPoint = 0
+			if tmp.birdPoint < 0 then
+				birdPoint = tmp.birdPoint * -1	--防止负负得正，从而变为赢分
+				total_bird_point = birdPoint * tmp.huPoint
+			else
+				total_bird_point = tmp.birdPoint * tmp.huPoint
+			end
+		else
+			tmp.point = 1000 + self:add_balance_point(k, tmp.huPoint + total_bird_point + tmp.gangPoint)
+		end
+
+
 		table.insert(self.game_end_balance_info.player_balance, tmp)
 	end
 	--显示中马的玩家

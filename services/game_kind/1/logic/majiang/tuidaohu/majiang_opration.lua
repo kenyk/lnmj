@@ -150,6 +150,17 @@ local function moCanGang(stackCard, pengCard, card, config)
 	end
 	return ret
 end
+
+function majiang_operation:check_is_laizi_card(card)
+	if self.table_config.laizi == false then
+		return false
+	end
+	if table.indexof(self.laizi_card,card) == false then
+		return false
+	end
+	return true
+end
+
 --[[
 	handcard:手上的牌 {11,11,13,14,22,33,44...}
 	stackCard:理过的手牌 {[11]=2,[13]=1,[14]=1,[22]=1,[33]=1,[44]=1...}
@@ -169,11 +180,12 @@ function majiang_operation:mo_card(handCard, stackCard, pengCard, card, last, ch
 	--TODO:判断是否能胡
 	local testCard = table.clone(handCard)
 	table.insert(testCard, card)
-	local canHu = hupai:check_can_hu(testCard,self.LAIZI, self.table_config.seven_hu,self.table_config.laizi_card)
+	local canHu,fan_type = hupai:check_can_hu(testCard,self.LAIZI, self.table_config.seven_hu,self.laizi_card)
     if canHu and not (louHuChair[chair_id] and louHuChair[chair_id][card]) then
 		ret.canHu = true
         ret.hucard = card
         ret.hutype = 1
+        ret.fanType = fan_type
 	end
     --第一次摸牌的时候判断4癞子(canhu没有false 只有nil)
     if isfirstDraw and not ret.canHu then
@@ -181,6 +193,7 @@ function majiang_operation:mo_card(handCard, stackCard, pengCard, card, last, ch
         if ret.canHu then
             ret.hucard = card
             ret.hutype = 1
+            ret.fanType = 1--4鬼胡牌，为平胡
         end
     end
 	return ret
@@ -206,11 +219,12 @@ function majiang_operation:other_out_card(handCard, stackCard, otherCard, chair_
         table.printR(louHuChair[chair_id])
     end 
 	if self.table_config.game_type == 1 and not (self.table_config.laizi and otherCard == self.laizi_card) then
-		local canHu = hupai:check_can_hu(tmpCard,self.LAIZI, self.table_config.seven_hu,self.table_config.laizi_card)
+		local canHu,fan_type = hupai:check_can_hu(tmpCard,self.LAIZI, self.table_config.seven_hu,self.laizi_card)
 		if canHu and not (louHuChair[chair_id] and louHuChair[chair_id][otherCard]) then
 			ret.canHu = true
             ret.hutype = 2
             ret.hucard = otherCard
+            ret.fanType = fan_type
 		end
 	end
 	return ret
@@ -249,11 +263,12 @@ function majiang_operation:other_self_gang(handCard, stackCard, otherCard, chair
 	local ret = {}
 	local tmpCard = table.clone(handCard)
 	table.insert(tmpCard, otherCard)
-	local canHu = hupai:check_can_hu(tmpCard, self.LAIZI, self.table_config.seven_hu,self.table_config.laizi_card)
+	local canHu,fan_type = hupai:check_can_hu(tmpCard, self.LAIZI, self.table_config.seven_hu,self.laizi_card)
     if canHu then
 		ret.canHu = true
         ret.hutype = 3
         ret.hucard = otherCard
+        ret.fanType = fan_type
 	end
 	return ret
 end
