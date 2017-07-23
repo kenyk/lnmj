@@ -65,7 +65,7 @@ function game_sink:init_game()
 	self.game_privite_info.canChi = 0
     self.game_privite_info.firstDraw = {}
 
-	--漏胡
+	--漏胡[不糊要过张才能胡牌]
 	self.louHuChair = {}  
     --是不是第一次摸牌
     self.firstDrawInfo = {}
@@ -831,7 +831,7 @@ function game_sink:deal_hu_balance(win_chair, lose_chair, pbirdPoint, op, fan_ty
 		zimo_hu_base_point = 2 
 	end
 
-	if self.game_config.no_laizi_double == true then
+	if self.game_config.no_laizi_double == true then --无鬼胡牌翻倍
 		local game_card_info = self.players[win_chair].card_info
 		local handCards = table.clone(game_card_info.handCards)
 		local is_double = true
@@ -890,6 +890,10 @@ function game_sink:deal_hu_balance(win_chair, lose_chair, pbirdPoint, op, fan_ty
 					birdPoint = birdPoint + pbirdPoint
 				end
 			end
+			-- if self.game_config.qiang_gang_quanbao == true then
+
+			-- end
+
 			local game_balance_info = self.players[lose_chair].balance_info
 			game_balance_info.huPoint = win_point
 			game_balance_info.birdPoint = -birdPoint 
