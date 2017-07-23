@@ -57,10 +57,10 @@ heartbeat 1003 {
 #推倒胡 data = {game_type:2,qiang_gang:true,can_qiang_ming_gang:true,qiang_gang_quanbao:true,gang_bao_quanbao:true,seven_hu:true,jiafan:true,
 #              no_laizi_double:true,no_feng:true,follow_banker:true,idle:true,
 #              laizi:true,baiban_laizi:true,kaiwang:true,
-#              find_bird:2,bird_follow_point:true}
+#              find_bird:2,bird_follow_point:true,boom_bird:1}
 #玩法          胡牌方式:(2.自摸)、可抢杠胡、明杠可抢、抢杠全包、杠爆全包、可胡7对、加番、无鬼加倍、不带风、跟庄、节节高 
 #鬼牌          是否有鬼、白板做鬼、翻鬼
-#买马          抓马数[2-10 -1为爆炸马]、马跟底分
+#买马          抓马数[2-10]、马跟底分、爆炸马[1、爆炸马；2、加分；3、翻倍]
 
 
 build_on_request_new_rooms 2002 {

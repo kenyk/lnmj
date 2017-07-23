@@ -362,7 +362,7 @@ function majiang_operation:handle_find_bird(leftcard)
 		return ret
 	end
 	local num
-	if self.game_config.find_bird == -1 then --胡牌的人只抓1匹马，马的点数是几就几分
+	if self.game_config.boom_bird > 0 then --爆炸马，胡牌的人只抓1匹马，马的点数是几就几分
 		local bird_point = 0
 		local card = leftcard[1]
 		if card >= 11 and card <= 39 then

@@ -1086,20 +1086,41 @@ function game_sink:game_end(args)
 		tmp.huType = v.balance_info.huType
 		tmp.gangType = json.encode(v.balance_info.gangType)
 
-		if self.game_config.bird_follow_point == true then	--马跟底分
+		if self.game_config.find_bird ~= 0 and self.game_config.bird_follow_point == true then	--马跟底分[总分=胡牌基本分+(胡牌基本分*中马点数)]
 			local total_bird_point = 0
 			local birdPoint = 0
 			if tmp.birdPoint < 0 then
 				birdPoint = tmp.birdPoint * -1	--防止负负得正，从而变为赢分
 				total_bird_point = birdPoint * tmp.huPoint
-			else
+			else --普通买马
 				total_bird_point = tmp.birdPoint * tmp.huPoint
 			end
+			tmp.point = 1000 + self:add_balance_point(k, tmp.huPoint + total_bird_point + tmp.gangPoint)		
 		else
-			tmp.point = 1000 + self:add_balance_point(k, tmp.huPoint + total_bird_point + tmp.gangPoint)
+			if self.game_config.boom_bird == 1 then	--爆炸马，加分[总分=胡牌基本分+(胡牌基本分*中马点数)]
+				local total_bird_point = 0
+				local birdPoint = 0
+				if tmp.birdPoint < 0 then
+					birdPoint = tmp.birdPoint * -1
+					total_bird_point = birdPoint * tmp.huPoint
+				else
+					total_bird_point = tmp.birdPoint * tmp.huPoint
+				end
+				tmp.point = 1000 + self:add_balance_point(k, tmp.huPoint + total_bird_point + tmp.gangPoint)
+			elseif self.game_config.boom_bird == 2 then	--爆炸马，翻倍[总分=胡牌基本分*中马点数]
+				local total_bird_point = 0
+				local birdPoint = 0
+				if tmp.birdPoint < 0 then
+					birdPoint = tmp.birdPoint * -1
+					total_bird_point = birdPoint * tmp.huPoint
+				else
+					total_bird_point = tmp.birdPoint * tmp.huPoint 
+				end
+				tmp.point = 1000 + self:add_balance_point(k,total_bird_point + tmp.gangPoint)
+			else --爆炸马
+				tmp.point = 1000 + self:add_balance_point(k, tmp.huPoint + total_bird_point + tmp.gangPoint)
+			end
 		end
-
-
 		table.insert(self.game_end_balance_info.player_balance, tmp)
 	end
 	--显示中马的玩家
